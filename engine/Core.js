@@ -151,9 +151,11 @@ export function eachGameTick(...handlers) {
     gameTickGen.addTickHandler(...handlers);
 }
 
-function eachRenderTick(...handlers) {
+export function eachRenderTick(...handlers) {
     renderTickGen.addTickHandler(...handlers);
 }
+
+export {gameTickGen, renderTickGen}
 
 export function startGame() {
     loader.load();
@@ -229,7 +231,7 @@ export class Vector2D {
 
 class MovementComponent extends RabisComponent { 
     offset = new Vector2D(0, 0);
-    setOffset= vec2d => {
+    setOffset = vec2d => {
         this.offset = vec2d;
         this.target.setOffsetPos(vec2d.x, vec2d.y);
     }
@@ -428,6 +430,11 @@ export function activateActor(rabisActor) {
     if (rabisActor.tick) tickSolver.on('game', rabisActor.tick);
     if (rabisActor[_rabisSpiritRender]) tickSolver.on('render', rabisActor[_rabisSpiritRender]);
     return rabisActor;
+}
+
+export function deactivateActor(rabisActor) {
+    if (rabisActor.tick) tickSolver.off('game', rabisActor.tick);
+    if (rabisActor[_rabisSpiritRender]) tickSolver.off('render', rabisActor[_rabisSpiritRender]);
 }
 
 function _createActor(componentClass, id, ...args) {

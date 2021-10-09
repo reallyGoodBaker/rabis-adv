@@ -165,7 +165,7 @@ export function createEv(activeTag, data) {
     return _ev;
 }
 
-function getEv(activeTag) {
+export function getEv(activeTag) {
     return internalEvStorage[activeTag];
 }
 

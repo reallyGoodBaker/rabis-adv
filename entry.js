@@ -10,9 +10,10 @@ function main() {
 
     let showMenu = false;
 
-    Rabis.createAxisEv('Ctrl', 'quick-skip', 1);
-    Rabis.createKeyEv('BackSpace', 'skip', 1);
-    Rabis.createKeyEv('Escape', 'menu', () => showMenu = !showMenu);
+    Rabis.createAxisEv('quick-skip', 'Control', 1);
+    Rabis.createKeyEv('skip', 'Enter', 1);
+    Rabis.createKeyEv('toggleDialogue', ' ', 1);
+    Rabis.createKeyEv('menu', 'Escape', () => showMenu = !showMenu);
 
     Rabis.createEv('hideHUD', 1);
 
@@ -23,6 +24,8 @@ function main() {
             Rabis.Game.pause();
         }
     });
+
+    // window.addEventListener('keydown', ev => console.log(ev.key));
 
     init();
 

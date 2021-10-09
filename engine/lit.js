@@ -124,19 +124,21 @@ export default {
                 break;
             case 'text':
                 let decoration = data.textDecoration || {};
-                let style = decoration.style?decoration.style:'normal';
-                let size = decoration.size?decoration.size:'10px';
-                let fm = decoration.fontFamily?decoration.fontFamily:'sans-serif';
+                let style = decoration.style || 'normal';
+                let size = decoration.size || '10px';
+                let fm = decoration.fontFamily || 'sans-serif';
                 let font = `${style} ${size} ${fm}`;
                 ctx.save();
                 ctx.fillStyle = data.color;
                 ctx.strokeStyle = data.border?(data.border.color?data.border.color:'blue'):'blue';
                 ctx.font = font;
-                ctx.textAlign = decoration.textAlign? decoration.textAlign: 'start';
-                ctx.textBaseline = decoration.baseline? decoration.baseline: 'alphabetic';
-                ctx.direction = decoration.direction? decoration.direction: 'inherit';
-                ctx.fillText(data.text,data.x,data.y,decoration.maxWidth?decoration.maxWidth:this.options.WIDTH);
+                ctx.textAlign = decoration.textAlign || 'start';
+                ctx.textBaseline = decoration.baseline || 'alphabetic';
+                ctx.direction = decoration.direction || 'inherit';
+                ctx.fillText(data.text,data.x,data.y, decoration.maxWidth || data.width || this.options.WIDTH);
                 ctx.restore();
+                break;
+            case 'blank':
                 break;
             default:
                 console.log('无效的type属性');

@@ -25,6 +25,7 @@
  * @property {number} y
  * @property {number} width
  * @property {number} height
+ * @property {number} alpha
  * @property {string} type
  * @property {{color: string; width: number}} border
  * @property {string} color
@@ -71,6 +72,7 @@ export default {
                 if(data.boxDecoration){
                     let dec = data.boxDecoration;
                     ctx.save();
+                    ctx.globalAlpha = renderObj.alpha || 1;
                     if(dec.shadow){//设置阴影
                         dec.radius && (ctx.fillStyle = 'rgba(0,0,0,0.4)') || (ctx.fillStyle = data.color);
                         let s = dec.shadow;
@@ -101,21 +103,27 @@ export default {
                     }
                 } else {
                     ctx.save();
+                    ctx.globalAlpha = renderObj.alpha || 1;
                     ctx.fillStyle = data.color;
                     ctx.fillRect(data.x,data.y,data.width,data.height);
                     ctx.restore();
                 }
                 ctx.save();
+                ctx.globalAlpha = renderObj.alpha || 1;
                 ctx.strokeStyle = data.border? data.border.color: 'blue';
                 ctx.lineWidth = data.border?(data.border.width?data.border.width:1):1;
                 data.border && ctx.strokeRect(data.x,data.y,data.width,data.height);
                 ctx.restore();
                 break;
             case 'img':
+                ctx.save();
+                ctx.globalAlpha = renderObj.alpha || 1;
                 ctx.drawImage(data.img,data.x,data.y,data.width || data.img.naturalWidth,data.height || data.img.naturalHeight);
+                ctx.restore();
                 break;
             case 'line':
                 ctx.save();
+                ctx.globalAlpha = renderObj.alpha || 1;
                 ctx.strokeStyle = data.color;
                 ctx.moveTo(data.x,data.y);
                 ctx.lineTo(data.x + data.width,data.y + data.height);
@@ -129,6 +137,7 @@ export default {
                 let fm = decoration.fontFamily || 'sans-serif';
                 let font = `${style} ${size} ${fm}`;
                 ctx.save();
+                ctx.globalAlpha = renderObj.alpha || 1;
                 ctx.fillStyle = data.color;
                 ctx.strokeStyle = data.border?(data.border.color?data.border.color:'blue'):'blue';
                 ctx.font = font;

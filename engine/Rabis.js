@@ -1,20 +1,22 @@
 export {
-    register, NULLFUNC, eachGameTick, Game, activateActor, createSpirit,
-    RabisSpirit as Spirit, getActor, RabisActor as Actor, Vector2D, 
+    register, NULLFUNC, eachGameTick, offEachGameTick, Game, activateActor, createSpirit,
+    RabisSpirit as Spirit, getActor, RabisActor as Actor, Vector2D, addComponent,
+    RabisComponent as Component, 
 } from './Core.js';
 export * from './WindowManager.js';
 export * from './Event.js';
 export * from './ScriptManager.js';
+export * from './FileManager.js';
 
-import {startGame, renderTickGen} from './Core.js';
-import {main} from '../entry.js';
+import {startGame, renderTickGen, } from './Core.js';
+import {getUIContainer} from './WindowManager.js';
 
 export let Global = (function(w) {
     return Object.create(w);
 })(window);
 
-async function exec() {    
-    Global.returnValMain = main();
+export function execMain(mainFunc) {
+    Global.returnValMain = mainFunc();
     startGame();
 }
 
@@ -29,7 +31,5 @@ export function fpsMeter() {
         div.innerText = count;
         count = 0;
     }, 1000);
-    document.body.appendChild(div);
+    getUIContainer().appendChild(div);
 }
-
-requestAnimationFrame(exec);

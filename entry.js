@@ -1,21 +1,24 @@
 import * as Rabis from './engine/Rabis.js';
-import init from './example-assest/main.js';
+import init from './assest/main.js';
 
 function main() {
 
-    Rabis.setDisplayWindow({
-        id: 'game',
-        type: '2d'
+    const {width, height, scale} = Rabis.getRegularWindowRes(4/3, 1400);
+
+    Rabis.set2dDisplayWindow({
+        width,
+        height,
+        scaleX: scale,
+        scaleY: scale,
+        id: 'game'
     });
 
-    let showMenu = false;
+    Rabis.setUIContainerSize(width, height);
 
-    Rabis.createAxisEv('quick-skip', 'Control', 1);
-    Rabis.createKeyEv('skip', 'Enter', 1);
-    Rabis.createKeyEv('toggleDialogue', ' ', 1);
-    Rabis.createKeyEv('menu', 'Escape', () => showMenu = !showMenu);
-
-    Rabis.createEv('hideHUD', 1);
+    const clckEv = Rabis.createEvent('click');
+    Rabis.getUIContainer().addEventListener('click', () => {
+        clckEv.emit();
+    })
 
     Rabis.bindKeyUp('Escape', () => {
         if (Rabis.Game.state(true) === 'paused') {
@@ -31,6 +34,4 @@ function main() {
 
 }
 
-export {
-    main,
-}
+Rabis.execMain(main);

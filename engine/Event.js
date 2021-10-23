@@ -1,7 +1,8 @@
-import {eachGameTick} from './Core.js';
+import {eachGameTick, Game, offEachGameTick} from './Core.js';
 
 export class EventEmitter {
     events = {};
+    thisArg = Function.prototype;
     on(type, handler) {
         !this.events[type]? (this.events[type] = [handler]) : this.events[type].push(handler);
     }
@@ -11,8 +12,8 @@ export class EventEmitter {
             if (el == handler) this.events[type][i] = null;
         });
     }
-    emit(type,...args) {
-        this.events[type] && this.events[type].forEach(handler => handler.apply(handler, args));
+    emit(type, ...args) {
+        this.events[type] && this.events[type].forEach(handler => handler.apply(this.thisArg, args));
     }
     once(type, ...args) {
         this.emit(type, ...args);
@@ -25,7 +26,7 @@ keyUpEvent = new EventEmitter();
 
 function activeKeyDownEvent() {
     window.addEventListener('keydown', function(ev) {
-        ev.preventDefault();
+        if (Game.state() == 1) ev.preventDefault();
         keyDownEvent.emit(ev.key, {
             ctrl: ev.ctrlKey,
             shift: ev.shiftKey,
@@ -37,7 +38,7 @@ function activeKeyDownEvent() {
 
 function activeKeyUpEvent() {
     window.addEventListener('keyup', function(ev) {
-        ev.preventDefault();
+        if (Game.state() == 1) ev.preventDefault();
         keyUpEvent.emit(ev.key, {
             ctrl: ev.ctrlKey,
             shift: ev.shiftKey,
@@ -149,15 +150,19 @@ export function createEv(activeTag, data) {
 
     function _unsub(listener) {
         sub.unsubscribe(c, activeTag, listener);
+        offEachGameTick(distribute);
     }
+
+    function distribute() {
+        c.distribute(activeTag);
+    }
+
+    eachGameTick(distribute);
 
     const _ev = {
         subscribe: _sub,
         unsubscribe: _unsub,
         publish: _pub,
-        distribute() {
-            c.distribute(activeTag);
-        }
     }
 
     internalEvStorage[activeTag] = _ev;
@@ -165,7 +170,31 @@ export function createEv(activeTag, data) {
     return _ev;
 }
 
-export function getEv(activeTag) {
+export function createEvent(eventTag) {
+    let ev = internalEvStorage[eventTag] = new EventEmitter();
+    return {
+        emit() {
+            ev.emit(eventTag);
+        },
+        on(handler) {
+            ev.on(eventTag, handler);
+        },
+        off(handler) {
+            ev.off(eventTag, handler);
+        }
+    }
+}
+export function subEvent(eventTag, handler) {
+    internalEvStorage[eventTag].on(eventTag, handler);
+}
+export function offEvent(eventTag, handler) {
+    internalEvStorage[eventTag].off(eventTag, handler);
+}
+export function triggerEvent(eventTag, ...args) {
+    internalEvStorage[eventTag].emit(eventTag, ...args);
+}
+
+function getEv(activeTag) {
     return internalEvStorage[activeTag];
 }
 
@@ -180,21 +209,19 @@ export function getEvSub(activeTag) {
 const _keyOccupied = new Set();
 
 export function createKeyEv(activeTag, key, data) {
-    let ev = createEv(activeTag, data);
+    let ev = createEvent(activeTag, data);
     bindKeyUp(key, () => {
         _keyOccupied.delete(key);
-        ev.publish(data);
-        ev.distribute();
+        ev.emit(data);
     });
 }
 
 export function createAxisEv(activeTag, key, data, doLoop=true) {
-    let ev = createEv(activeTag, data);
+    let ev = createEvent(activeTag, data);
     if (doLoop) {
         eachGameTick(() => {
             if (_keyOccupied.has(key)) {
-                ev.publish(data);
-                ev.distribute();
+                ev.emit(key, data);
             }
         })
         bindKeyDown(key, () => _keyOccupied.add(key));
@@ -202,19 +229,13 @@ export function createAxisEv(activeTag, key, data, doLoop=true) {
         return;
     }
     bindKeyDown(key, () => {
-        ev.publish({type: 0, data});
-        ev.distribute();
+        ev.emit(key, {type: 0, data});
     });
     bindKeyUp(key, () => {
-        ev.publish({type: 1, data});
-        ev.distribute();
+        ev.emit(key, {type: 1, data});
     });
 }
 
 export function subKeyEv(activeTag, handler) {
-    getEvSub(activeTag).subscribe(handler);
-}
-
-export function subAxisEv(activeTag, handler) {
-    getEvSub(activeTag).subscribe(handler);
+    getEv(activeTag).on(activeTag, handler);
 }

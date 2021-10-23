@@ -1,7 +1,8 @@
 import {LifeCycleError, falseAssertion} from './Errors.js';
-import { createEv, EventEmitter, RabisEvCenter } from './Event.js';
+import { createEv, EventEmitter, RabisEvCenter, internalEventCenter} from './Event.js';
 import lit from './lit.js';
 import {GameDeltaTick} from './EngineConfig.js';
+import {getDisplaySize, getScale} from './WindowManager.js';
 
 export const NULLFUNC = () => void undefined;
 
@@ -151,6 +152,10 @@ export function eachGameTick(...handlers) {
     gameTickGen.addTickHandler(...handlers);
 }
 
+export function offEachGameTick(handler) {
+    gameTickGen.rmTickHandler(handler);
+}
+
 export function eachRenderTick(...handlers) {
     renderTickGen.addTickHandler(...handlers);
 }
@@ -169,9 +174,11 @@ export const Game = {
     resume: GameLifeCycle.resume
 }
 
+//eachGameTick(() => internalEventCenter.distributeAll());
+
 //====================================================================
 
-class RabisComponent {
+export class RabisComponent {
     /**
      * @type {RabisActor}
      */
@@ -309,9 +316,56 @@ class AnimationComponent extends RabisComponent {
     }
 }
 
+class Align extends RabisComponent {
+    __getTargetInfo() {
+        return this.target.getSize();
+    }
+
+    /**
+     * @param {'start'|'center'|'end'} horizontal 
+     * @param {'start'|'center'|'end'} vertical 
+     */
+    align(horizontal, vertical, ox=0, oy=0) {
+        const wSize = getDisplaySize();
+        const [w, h] = this.__getTargetInfo();
+        let _w = 0, _h = 0;
+        switch (horizontal) {
+            case 'start':
+                _w = 0;
+                break;
+            case 'end':
+                _w = wSize.width - w;
+                break;
+            default:
+            case 'center':
+                _w = (wSize.width - w)/2;
+                break;
+        }
+        switch (vertical) {
+            case 'start':
+                _h = 0;
+                break;
+            case 'end':
+                _h = wSize.height - h;
+                break;
+            default:
+            case 'center':
+                _h = (wSize.height - h)/2;
+                break;
+        }
+
+        this.target.setOffsetPos(_w + ox, _h + oy);
+    }
+}
+
 const _ActorComps = {
     movement: MovementComponent,
     animation: AnimationComponent,
+    align: Align,
+}
+
+export function addComponent(tag, componentClass) {
+    _ActorComps[tag] = componentClass;
 }
 
 //====================================================================
@@ -324,6 +378,7 @@ export class RabisActor {
         this.id = id;
         RabisActors[id] = this;
     }
+    _components = {};
     ox = 0;  //offset x
     oy = 0;  //offset y
     width = 0;
@@ -372,8 +427,9 @@ export class RabisActor {
     /**
      * @type {<T extends keyof _ActorComps>(tag: T) => any}
      */
-    getActorComponent(tag) {
-        return new _ActorComps[tag](this);
+    getActorComponent(tag, id=`default-${tag}`) {
+        let c = new _ActorComps[tag](this);
+        return this._components[id] = c;
     }
     /**
      * @param {RabisComponent} actorComponent 
@@ -383,8 +439,14 @@ export class RabisActor {
         //console.log(actorComponent.active.toString());
         actorComponent.active();
     }
-    mountComponent(tag, initializer=v=>v) {
-        this.useComponent(initializer(this.getActorComponent(tag)));
+    /**
+     * @type {<T extends keyof _ActorComps>(tag: T, initializer: (v: RabisComponent) => RabisComponent) => any}
+     */
+    mountComponent(tag, initializer=v=>v, id) {
+        this.useComponent(initializer(this.getActorComponent(tag, id)));
+    }
+    getComponent = id => {
+        return this._components[id]? this._components[id]: this._components[`default-${id}`];
     }
 }
 
@@ -405,23 +467,51 @@ eachRenderTick(() => {
 
 const _rabisSpiritRender = Symbol('RabisSpiritRender');
 
+let _scale = {
+    sx: 1,
+    sy: 1
+};
+let _changeScale = false;
+
 export class RabisSpirit extends RabisActor {
-    constructor(id, src) {
+    constructor(id, img) {
         super(id);
-        if (src) this._image.src = src;
+        if (img) this._image = img;
+        if (!_changeScale) {
+            let scale = getScale();
+            if (scale) {
+                _scale.sx = scale[0];
+                _scale.sy = scale[1];
+            }
+        }
     }
-    _image = document.createElement('img');
+    _image = null;
     [_rabisSpiritRender] = () => {
         let renderConf = {
             type: 'img',
             x: this.ox,
             y: this.oy,
-            width: this.width,
-            height: this.height,
+            width: this.width * _scale.sx,
+            height: this.height * _scale.sy,
             img: this._image
         };
         const afterProcessedRenderConf = this.render && this.render(renderConf);
         lit.render(afterProcessedRenderConf || renderConf);
+    }
+    getRawSize() {
+        let w = this._image.naturalWidth;
+        let h = this._image.naturalHeight;
+        return [w, h];
+    }
+    getScaledSize() {
+        let w = (this.width || this._image.naturalWidth)*_scale.sx;
+        let h = (this.height || this._image.naturalHeight)*_scale.sy;
+        return [w, h];
+    }
+    getSize() {
+        let w = this.width || this._image.naturalWidth;
+        let h = this.height || this._image.naturalHeight;
+        return [w, h];
     }
 }
 

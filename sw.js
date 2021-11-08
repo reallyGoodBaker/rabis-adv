@@ -1,10 +1,9 @@
 const VER = '0'
 
 const ASSEST = [
-  '/',
-  "index.html",
-  "e.png",
-  "assest/figure/bgc.jpg"
+  './',
+  "./index.html",
+  "./e.png",
 ]
 
 self.addEventListener('install', e => {

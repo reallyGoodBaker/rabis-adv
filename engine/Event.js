@@ -1,24 +1,121 @@
 import {eachGameTick, Game, offEachGameTick} from './Core.js';
 
 export class EventEmitter {
+
     events = {};
     thisArg = Function.prototype;
+    maxLength = -1;
+
+    /**
+     * 
+     * @param {number} size 
+     */
+    setMaxListeners(size) {
+        this.maxLength = size;
+    }
+
+    /**
+     * 
+     * @param {string} type 
+     * @param {(...args) => void} handler 
+     */
     on(type, handler) {
-        !this.events[type]? (this.events[type] = [handler]) : this.events[type].push(handler);
+        if (!handler || typeof handler !== 'function') return;
+        if (this.events[type]) {
+            const arr = this.events[type], len = this.maxLength;
+            if (~len && arr.length === this.maxLength) {
+                return;
+            }
+            arr.push(handler);
+        } else {
+            this.events[type] = [handler];
+        }
     }
+
+    /**
+     * 
+     * @param {string} type 
+     * @param {(...args) => void | undefined} handler 
+     * @returns 
+     */
     off(type, handler) {
-        if (!handler) return this.events[type] = null;
-        this.events[type] && this.events[type].forEach((el, i) => {
-            if (el == handler) this.events[type][i] = null;
-        });
+        if (!handler) return this.offAll();
+        let arr = this.events[type], count = 0;
+        if(arr) {
+            const len = arr.length;
+            let result = [];
+
+            for (let i = 0; i < len; i++) {
+                if (el === handler || el.toString() === handler.toString()) {
+                    count++;
+                    continue;
+                }
+                result.push(arr[i]);
+            }
+
+            delete this.events[type];
+            this.events[type] = result;
+
+            return count;
+        }
     }
+
+    /**
+     * 
+     * @returns {number}
+     */
+    offAll() {
+        const size = this.events[type].length;
+        delete this.events[type];
+        this.events[type] = null;
+        return size;
+    }
+
+    /**
+     * 
+     * @param {string} type 
+     * @param  {...any} args 
+     */
     emit(type, ...args) {
-        this.events[type] && this.events[type].forEach(handler => handler.apply(this.thisArg, args));
+        let arr = this.events[type];
+        if (arr) {
+            const len = arr.length;
+            for (let i = 0; i < len; i++) {
+                arr[i].apply(this.thisArg, args);
+            }
+        }
     }
+
+    /**
+     * 
+     * @param {string} type 
+     * @param  {...any} args 
+     */
     once(type, ...args) {
         this.emit(type, ...args);
-        this.events[type] = null;
+        this.offAll();
     }
+
+    /**
+     * 
+     * @param {string} type 
+     * @returns {Array<any>}
+     */
+    listeners(type) {
+        return this.events[type];
+    }
+
+    constructor() {
+
+        /**
+         * alias
+         */
+        this.addEventListener = this.on;
+        this.removeListener = this.off;
+        this.removeAllListener = this.offAll;
+
+    }
+
 }
 
 const keyDownEvent = new EventEmitter(),
@@ -26,7 +123,7 @@ keyUpEvent = new EventEmitter();
 
 function activeKeyDownEvent() {
     window.addEventListener('keydown', function(ev) {
-        if (Game.state() == 1) ev.preventDefault();
+        if (Game.state() === 1) ev.preventDefault();
         keyDownEvent.emit(ev.key, {
             ctrl: ev.ctrlKey,
             shift: ev.shiftKey,
@@ -38,7 +135,7 @@ function activeKeyDownEvent() {
 
 function activeKeyUpEvent() {
     window.addEventListener('keyup', function(ev) {
-        if (Game.state() == 1) ev.preventDefault();
+        if (Game.state() === 1) ev.preventDefault();
         keyUpEvent.emit(ev.key, {
             ctrl: ev.ctrlKey,
             shift: ev.shiftKey,

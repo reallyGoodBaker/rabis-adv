@@ -35,3 +35,9 @@ function main() {
 }
 
 Rabis.execMain(main);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker
+      .register('./sw.js')
+      .then(() => { console.log('Service Worker Registered'); });
+  }

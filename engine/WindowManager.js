@@ -19,6 +19,14 @@ export function getWindowSize() {
     }
 }
 
+export function getScaledDisplaySize() {
+    let [sx, sy] = getScale();
+    return {
+        width: Lit.options.WIDTH / sx,
+        height: Lit.options.HEIGHT / sy
+    }
+}
+
 export function getDisplaySize() {
     return {
         width: Lit.options.WIDTH,

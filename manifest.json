@@ -1,0 +1,14 @@
+{
+    "name": "Rabis AVG",
+    "display": "fullscreen",
+    "start_url": "./",
+    "theme_color": "#8888ff",
+    "background_color": "#aaaaff",
+    "icons": [
+      {
+        "src": "e.png",
+        "sizes": "248x248",
+        "type": "image/png"
+      }
+    ]
+  }

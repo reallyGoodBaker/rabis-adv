@@ -443,13 +443,18 @@ export class RabisActor {
      * @type {<T extends keyof _ActorComps>(tag: T, initializer: (v: RabisComponent) => RabisComponent) => any}
      */
     mountComponent(tag, initializer=v=>v, id) {
-        this.useComponent(initializer(this.getActorComponent(tag, id)));
+        let c = this.getActorComponent(tag, id);
+        initializer(c);
+        this.useComponent(c);
     }
     getComponent = id => {
         return this._components[id]? this._components[id]: this._components[`default-${id}`];
     }
 }
 
+/**
+ * @returns {RabisActor}
+ */
 export function getActor(id) {
     return RabisActors[id];
 }

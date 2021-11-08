@@ -1,4 +1,4 @@
-import * as ADV from '../adv/index.js';
+import * as ADV from '../engine/adv/index.js';
 import * as R from '../engine/Rabis.js'
 
 const {Resource} = R;
@@ -18,7 +18,7 @@ const figureBundle = Resource.createBundle()
 const resource = Resource.createBundle('main')
 .set('ui', 'bundle', uiBundle)
 .set('figure', 'bundle', figureBundle)
-.set('index-script', 'text', './assest/scripts/index')
+.set('index-script', 'text', './assest/scripts/index');
 
 
 let _loadingUI = (() => {
@@ -46,10 +46,9 @@ mainScene.createAgent({
     id: '背景',
     source: await Resource.get('main/figure/bgc'),
     run: actor => {
-        let wSize = R.getDisplaySize();
-        let scale = R.getScale()[0];
+        let wSize = R.getScaledDisplaySize();
         let [rw, rh] = actor.getRawSize();
-        actor.height = wSize.height / scale;
+        actor.height = wSize.height;
         actor.width = actor.height * rw / rh;
     }
 }).show();
@@ -60,7 +59,6 @@ mainScene.createAgent({
     run: actor => {
         actor.mountComponent('align', c => {
             c.align('center', 'end');
-            return c;
         });
     }
 });
@@ -71,18 +69,9 @@ mainScene.createAgent({
     run: actor => {
         actor.mountComponent('align', c => {
             c.align('end', 'end', -100);
-            return c;
         });
     }
 });
-
-mainScene.addAction('打印', (...args) => console.log(...args));
-
-mainScene.debuggerAgent(msg => {
-    console.log(msg);
-});
-
-
 
 // R.fpsMeter();
 
@@ -92,14 +81,12 @@ const _ui = UI.createView(await Resource.get('main/ui/layout'));
 
 _ui.setState(state => {
 
-    function toggle() {
+    state['skip:on:click'] = function() {
         if (this.getAttribute('select') != '1') {
             return this.setAttribute('select', '1');
         }
         return this.setAttribute('select', '0');
-    }
-
-    state['skip:on:click'] = toggle;
+    };
 
     let hide = [false, null];
     state['hide:on:click'] = function(ev) {
@@ -124,25 +111,45 @@ _ui.setState(state => {
     ADV.bindActionEvent('next-action', mainScene);
 
     let flow = mainScene.getFlow();
+
+    const change = data => {
+        if (data[0] === 0 || data[0] === 2) return;
+        const {agent, message} = data[1];
+        R.getActor(agent).show();
+        _ui.setState({
+            name: agent,
+            message,
+            progress: flow.getProgress()
+        });
+    }
+
+    flow.on('once', change);
+
+    flow.on('goto', (data, pre, cur) => {
+        change(data);
+        
+    });
     state['progress:on:click'] = function(ev) {
         let rate = ev.offsetX/this.offsetWidth;
         let index = Math.floor(rate*flow._size);
         flow.goto(index);
+        ev.stopPropagation();
+    }
+
+    state['save:on:click'] = function(ev) {
+        mainScene.quickSave();
+        ev.stopPropagation();
+    }
+
+    state['load:on:click'] = function(ev) {
+        mainScene.load(mainScene.saves().length - 1);
+        act.emit();
+        ev.stopPropagation();
     }
 
 });
 
 UI.mountView(_ui);
-
-
-ADV.defaultOnMsg(_ui);
-
-mainScene.onFlowProgressChange(val => {
-    _ui.setState({
-        progress: val
-    });
-})
-
 
 //
 }
